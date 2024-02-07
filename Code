@@ -1,0 +1,138 @@
+import pandas as pd
+import numpy as np
+import datetime as dt
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+from sklearn.model_selection import train_test_split
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+
+%matplotlib inline
+
+import warnings
+warnings.filterwarnings('ignore')
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix
+# URL of the dataset
+url = "https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.data"
+
+df = pd.read_csv(url, header=None)
+
+# Display the first few rows of the DataFrame
+df.head()
+df.shape
+df.info()
+# Check Duplication
+df.duplicated().sum()
+# check Missing value
+df.isna().sum()
+# Check the number of unique values of each column
+df.nunique()
+df = df.drop([0], axis= 1)
+df.head()
+df = df.rename(columns={1 : 'target'})
+df.target.replace({'M' : '1','B': '0'},inplace=True)
+df.head()
+# Converting target type to float64
+df.target = df.target.astype('float64')
+df.head()
+df.tail()
+df.info()
+# Check statistic of dataset
+df.describe().T
+# I looked at how many benign and malignant yields there are.
+df.target.value_counts()
+# visualized target data in the dataset.
+df['target'].value_counts().plot(kind='bar',edgecolor='black',color=['lightsteelblue','navajowhite'])
+plt.title(" Target",fontsize=20)
+plt.show()
+# Correlation Analysis
+cor = df.corr()
+cor
+plt.figure(figsize=(25,23))
+sns.heatmap(cor, annot= True, linewidths= 0.3 ,linecolor = "black", fmt = ".2f")
+plt.title('Correlation Heatmap')
+plt.show()
+threshold = 0.75
+filtre = np.abs(cor["target"] > threshold)
+corr_features = cor.columns[filtre].tolist()
+plt.figure(figsize=(10,8))
+sns.clustermap(df[corr_features].corr(), annot = True, fmt = ".2f")
+plt.title("\n                               Correlation Between Features with Cor Threshold [0.75]\n",fontsize=20)
+plt.show()
+sns.pairplot(df[corr_features], diag_kind = "kde" , markers = "*", hue="target")
+plt.show()
+# Splitting data
+x= df.drop('target',axis=1)
+y= df['target']
+x_train, x_test, y_train, y_test = train_test_split(x,y,test_size=0.30,random_state=101)
+s= StandardScaler()
+x_train = s.fit_transform(x_train)
+x_test = s.fit_transform(x_test)
+algorithm = ['KNeighborsClassifier','RandomForestClassifier','DecisionTreeClassifier','GaussianNB','LogisticRegression', 'SVC' ]
+Accuracy=[]
+def all(model):
+    model.fit(x_train,y_train)
+    pred = model.predict(x_test)
+
+    acc=accuracy_score(y_test,pred)
+    Accuracy.append(acc)
+
+    # confusion matrix without Normalization
+    print('confusion matrix')
+    # Calculate confusion matrix
+    cm = confusion_matrix(y_test,pred)
+    # Plot the confusion matrix
+    sns.heatmap(cm, annot=True, fmt='d',cmap=['lightsteelblue','navajowhite'])
+    plt.title('Confusion matrix')
+    plt.xlabel('Predicted lablel')
+    plt.ylabel('True lable')
+    plt.show()
+
+    # confusion matrix without Normalization
+    print('Normalized confusion matrix')
+    # Calculate confusion matrix
+    cm1 = confusion_matrix(y_test,pred, normalize='true')
+    # Plot the confusion matrix
+    sns.heatmap(cm1, annot=True,cmap=['lightsteelblue','navajowhite'])
+    plt.title('Normalized Confusion  matrix')
+    plt.xlabel('Predicted label')
+    plt.ylabel('True label')
+    plt.show()
+
+    # print Confusion matrix, Classification report and accuracy report
+    print(cm)
+    print(classification_report(y_test,pred))
+    print('accuracy_score : ' , acc)
+model_1 =KNeighborsClassifier(n_neighbors=2)
+all(model_1)
+model_2= RandomForestClassifier(n_estimators=100,random_state=0)
+all(model_2)
+model_3 = DecisionTreeClassifier(random_state=42)
+all(model_3)
+model_4 = GaussianNB()
+all(model_4)
+model_5 = LogisticRegression()
+all(model_5)
+model_6 = SVC(kernel = 'linear')
+all(model_6)
+model_6.fit(x_train, y_train)
+df = pd.DataFrame({'Algorithm':algorithm,'Accuracy':Accuracy })
+fig = plt.figure(figsize=(20,10))
+plt.plot(df.Algorithm,df.Accuracy,label='Accuracy',lw=5,color='peru',marker='o',markersize = 15)
+plt.legend(fontsize=15)
+plt.xlabel('\nModel',fontsize= 20)
+plt.ylabel('Accuracy\n',fontsize= 20)
+plt.show()
+#The results of the training have been compared via the above plottting results 
+#this concludes the code.
